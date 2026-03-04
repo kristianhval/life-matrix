@@ -37,10 +37,24 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .mic-btn{background:#252525;border:1px solid var(--border);color:#ccc;border-radius:8px;padding:9px 15px;cursor:pointer;font-size:.9rem;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:7px;transition:all .2s;white-space:nowrap;font-weight:500}
 .mic-btn:hover{border-color:var(--gold);color:var(--gold)}
 .mic-btn.on{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.08)}
-.sort-btn{background:var(--gold);color:#000;font-family:"DM Sans",sans-serif;font-weight:600;font-size:.88rem;border:none;border-radius:8px;padding:9px 15px;cursor:pointer;white-space:nowrap}
-.sort-btn:hover{opacity:.88}
-.sort-btn:disabled{opacity:.4;cursor:not-allowed}
-.sort-status{font-size:.74rem;color:var(--muted);margin-top:4px}
+.dump-section{background:var(--gold-dim2);border-bottom:1px solid var(--border);padding:16px 28px}
+.dump-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dump-hdr h2{font-family:"Playfair Display",serif;font-size:.98rem;color:var(--text)}
+.dump-hdr span{font-size:.86rem;color:#bbb;margin-left:4px}
+.dump-row{display:flex;gap:10px;align-items:flex-start}
+.dump-ta{flex:1;background:#252525;border:1px solid var(--border);color:var(--text);font-family:"DM Sans",sans-serif;font-size:.87rem;padding:11px 13px;border-radius:8px;resize:vertical;min-height:68px;outline:none;line-height:1.5}
+.dump-ta:focus{border-color:var(--gold)}
+.dump-ta::placeholder{color:#555}
+.dump-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.dump-chip{background:#1e1e1e;border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:160px;max-width:320px}
+.dump-chip-text{font-size:.88rem;color:var(--text);line-height:1.4}
+.dump-chip-btns{display:flex;flex-wrap:wrap;gap:4px}
+.dump-chip-btn{font-size:.72rem;padding:3px 8px;border-radius:5px;border:1px solid #3a3a3a;background:#2a2a2a;color:#aaa;cursor:pointer;font-family:"DM Sans",sans-serif;transition:all .15s}
+.dump-chip-btn:hover{border-color:var(--gold);color:var(--gold)}
+.dump-chip-btn.appt{border-color:#4a8a6a;color:#6abf8f}
+.dump-chip-btn.appt:hover{background:rgba(106,191,143,.1)}
+.dump-chip-del{font-size:.72rem;padding:3px 7px;border-radius:5px;border:1px solid #3a3a3a;background:transparent;color:#666;cursor:pointer;font-family:"DM Sans",sans-serif}
+.dump-chip-del:hover{border-color:var(--red);color:var(--red)}
 
 .main{padding:24px 28px 60px}
 .top-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;align-items:start}
@@ -164,7 +178,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
   header{background:#fff!important;padding:8px 0 6px;border-bottom:1px solid #ddd}
   .logo-label{color:#b8860b!important;font-size:1rem}
   #logo-img{height:28px}
-  .hbtn,.sort-btn,.mic-btn,.s-mic,.t-del,.a-del,.add-btn,.guide,.modal-bg,.toast,.appt-panel,.cal-panel,.radar-panel,.ot-done-btn,.ot-block{display:none!important}
+  .hbtn,.sort-btn,.mic-btn,.s-mic,.t-del,.a-del,.add-btn,.dump-section,.guide,.modal-bg,.toast,.appt-panel,.cal-panel,.radar-panel,.ot-done-btn,.ot-block{display:none!important}
   body{background:#fff!important;color:#111!important;font-size:10px}
   .main{padding:6px 0 0}
   .top-row{display:block!important}
@@ -205,6 +219,18 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 <div class="theme-bar">
 <span class="theme-label">Theme for This Week</span>
 <input class="theme-in" id="theme" placeholder="Enter your weekly theme or intention...">
+</div>
+<div class="dump-section">
+<div class="dump-hdr"><div class="gold-bar"></div><h2>Brain Dump</h2>
+<span>&#8212; dictate or type, then route each item to a section</span></div>
+<div class="dump-row">
+  <textarea class="dump-ta" id="dump" placeholder="e.g. Call the dentist, finish retention emails, Juniper date..."></textarea>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="mic-btn" id="mic-dump" onclick="toggleDumpMic()">&#127908;&nbsp; Dictate</button>
+    <button class="mic-btn" onclick="parseDump()" style="font-size:.82rem;padding:8px 12px">&#10004;&nbsp; Parse</button>
+  </div>
+</div>
+<div class="dump-chips" id="dump-chips"></div>
 </div>
 <div class="main">
 <div class="top-row">
@@ -663,6 +689,61 @@ function toast(msg,gold){
   var e=document.getElementById('toast'); e.textContent=msg;
   e.className='toast show'+(gold?' gold':'');
   clearTimeout(toastT);toastT=setTimeout(function(){e.className='toast';},3400);
+}
+
+// Brain Dump v2 — manual router
+var dumpRec=null;
+function toggleDumpMic(){
+  var btn=document.getElementById('mic-dump');
+  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){toast('Requires Chrome.',false);return;}
+  if(dumpRec){dumpRec.stop();return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  dumpRec=new SR();dumpRec.continuous=true;dumpRec.interimResults=false;dumpRec.lang='en-US';
+  var ta=document.getElementById('dump');
+  btn.classList.add('on');btn.innerHTML='&#9209;&nbsp; Stop';
+  dumpRec.onresult=function(e){
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){ta.value+=(ta.value?', ':'')+e.results[i][0].transcript.trim();}
+    }
+  };
+  dumpRec.onend=function(){btn.classList.remove('on');btn.innerHTML='&#127908;&nbsp; Dictate';dumpRec=null;parseDump();};
+  dumpRec.onerror=function(e){toast('Mic: '+e.error,false);if(dumpRec)dumpRec.stop();};
+  dumpRec.start();toast('Listening...',true);
+}
+
+function parseDump(){
+  var ta=document.getElementById('dump');
+  var raw=ta.value.trim(); if(!raw)return;
+  var items=raw.split(/[,;.\n]+/).map(function(s){return s.trim();}).filter(function(s){return s.length>1;});
+  if(!items.length)return;
+  ta.value='';
+  renderDumpChips(items);
+}
+
+function renderDumpChips(items){
+  var wrap=document.getElementById('dump-chips'); if(!wrap)return;
+  wrap.innerHTML='';
+  items.forEach(function(text){
+    var chip=el('div'); chip.className='dump-chip';
+    var t=el('div'); t.className='dump-chip-text'; t.textContent=text;
+    var btns=el('div'); btns.className='dump-chip-btns';
+    // Section buttons
+    (ST.sections||[]).forEach(function(sec){
+      var b=el('button'); b.className='dump-chip-btn'; b.textContent=sec.name||'Section';
+      b.onclick=function(){sec.tasks.push(nT(text));save();render();chip.remove();};
+      btns.appendChild(b);
+    });
+    // Appointments button
+    var ab=el('button'); ab.className='dump-chip-btn appt'; ab.textContent='Appointments';
+    ab.onclick=function(){ST.appts.push(nA(text));save();renderAppts();renderCal();chip.remove();};
+    btns.appendChild(ab);
+    // Delete button
+    var db=el('button'); db.className='dump-chip-del'; db.textContent='✕';
+    db.onclick=function(){chip.remove();};
+    btns.appendChild(db);
+    chip.appendChild(t); chip.appendChild(btns);
+    wrap.appendChild(chip);
+  });
 }
 
 load(); render();
