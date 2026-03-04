@@ -599,6 +599,41 @@ function toggleSecMic(sid,btn){
   secRec.start();toast('Listening...',true);
 }
 
+function localDateStr(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function parseApptText(raw){
+  var text=raw, date='', time='';
+  // Time: 2pm / 2:30pm / 2:30 pm / noon / midnight
+  var tm=text.match(/\b(noon|midnight|(\d{1,2})(?::(\d{2}))?\s*(am|pm)|(\d{1,2})\s*o'?clock(?:\s*(am|pm))?)\b/i);
+  if(tm){
+    var full=tm[0],h,m=0;
+    if(/noon/i.test(full)){h=12;}
+    else if(/midnight/i.test(full)){h=0;}
+    else{var tp=full.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);h=parseInt(tp[1]);m=tp[2]?parseInt(tp[2]):0;var ap=(tp[3]||'').toLowerCase();if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;}
+    time=('0'+h).slice(-2)+':'+('0'+m).slice(-2);
+    text=text.replace(full,'').trim();
+  }
+  // Date parsing
+  var today=new Date();
+  var days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  var months=['january','february','march','april','may','june','july','august','september','october','november','december'];
+  if(/\btoday\b/i.test(text)){date=localDateStr(today);text=text.replace(/\btoday\b/i,'').trim();}
+  else if(/\btomorrow\b/i.test(text)){var tom=new Date(today);tom.setDate(tom.getDate()+1);date=localDateStr(tom);text=text.replace(/\btomorrow\b/i,'').trim();}
+  if(!date){
+    var dm=text.match(/\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i);
+    if(dm){var td=days.indexOf(dm[2].toLowerCase()),nd=new Date(today),diff=td-nd.getDay();if(diff<=0||dm[1])diff+=7;nd.setDate(nd.getDate()+diff);date=localDateStr(nd);text=text.replace(dm[0],'').trim();}
+  }
+  if(!date){
+    var mm=text.match(new RegExp('\\b('+months.join('|')+')\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b','i'));
+    if(mm){var mo=months.indexOf(mm[1].toLowerCase()),dy=parseInt(mm[2]),yr=today.getFullYear(),cd=new Date(yr,mo,dy);if(cd<today)cd.setFullYear(yr+1);date=localDateStr(cd);text=text.replace(mm[0],'').trim();}
+  }
+  if(!date){
+    var sm=text.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if(sm){var mo2=parseInt(sm[1])-1,dy2=parseInt(sm[2]),yr2=sm[3]?parseInt(sm[3]):today.getFullYear();if(yr2<100)yr2+=2000;date=localDateStr(new Date(yr2,mo2,dy2));text=text.replace(sm[0],'').trim();}
+  }
+  text=text.replace(/\b(at|on)\b/gi,'').replace(/\s+/g,' ').replace(/^[\s,]+|[\s,]+$/g,'').trim();
+  return{text:text||raw,date:date,time:time};
+}
+
 var apptRec=null;
 function toggleApptMic(btn){
   if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){toast('Requires Chrome.',false);return;}
@@ -606,7 +641,13 @@ function toggleApptMic(btn){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   apptRec=new SR();apptRec.continuous=false;apptRec.interimResults=false;apptRec.lang='en-US';
   btn.classList.add('on');btn.innerHTML='&#9209;';
-  apptRec.onresult=function(e){ST.appts.push(nA(e.results[0][0].transcript.trim()));save();renderAppts();renderCal();};
+  apptRec.onresult=function(e){
+    var parsed=parseApptText(e.results[0][0].transcript.trim());
+    var a=nA(parsed.text);
+    if(parsed.date)a.date=parsed.date;
+    if(parsed.time)a.time=parsed.time;
+    ST.appts.push(a);save();renderAppts();renderCal();
+  };
   apptRec.onend=function(){btn.classList.remove('on');btn.innerHTML='&#127908;';apptRec=null;};
   apptRec.onerror=function(e){toast('Mic: '+e.error,false);apptRec=null;};
   apptRec.start();toast('Say your appointment.',true);
