@@ -113,13 +113,13 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .appt-split{display:grid;grid-template-columns:1fr 1fr;min-height:160px}
 .appt-left{border-right:1px solid #333;display:flex;flex-direction:column}
 .appt-left.over{background:rgba(255,199,0,.05);outline:1px dashed rgba(255,199,0,.3)}
-.appt-row{display:flex;align-items:center;gap:8px;padding:6px 14px;transition:background .1s}
+.appt-row{display:flex;align-items:flex-start;gap:8px;padding:6px 14px;transition:background .1s}
 .appt-row:hover{background:rgba(255,255,255,.03)}
 .appt-date{background:transparent;border:none;color:var(--gold);font-family:"DM Sans",sans-serif;font-size:.78rem;width:110px;outline:none;cursor:pointer}
 .appt-date::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
-.appt-time{background:transparent;border:none;color:#aaa;font-family:"DM Sans",sans-serif;font-size:.78rem;width:80px;outline:none;cursor:pointer}
+.appt-time{background:transparent;border:none;color:#aaa;font-family:"DM Sans",sans-serif;font-size:.78rem;width:95px;min-width:95px;outline:none;cursor:pointer}
 .appt-time::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
-.appt-text{background:transparent;border:none;color:#e8e8e8;font-family:"DM Sans",sans-serif;font-size:.84rem;flex:1;outline:none}
+.appt-text{background:transparent;border:none;color:#e8e8e8;font-family:"DM Sans",sans-serif;font-size:.84rem;flex:1;outline:none;resize:none;padding:0;min-height:21px;overflow:hidden;line-height:1.5;word-break:break-word}
 .a-del{background:transparent;border:none;color:#333;cursor:pointer;font-size:.77rem;opacity:0;transition:all .15s}
 .appt-row:hover .a-del{opacity:1}
 .a-del:hover{color:var(--red)}
@@ -257,7 +257,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
     <ol>
       <li>Set your <strong>Period</strong> (any date range: one week, two weeks, a full month) and a <strong>Theme</strong> to anchor your focus for the period.</li>
       <li>Name each section with an area of your life. Use <strong>&#x2665; Save Template</strong> to lock in your section names and <strong>&#x21BA; Load Template</strong> to restore them next period.</li>
-      <li>Drag and drop tasks between sections if anything lands in the wrong place.</li>
+      <li>Drag and drop tasks between sections.</li>
       <li>Star <strong>&#9733;</strong> the most important item in each section. Pick your single <strong>ONE Thing</strong> across all sections and block time for it first.</li>
       <li>Add appointments with a date so they appear on the monthly calendar. Hover a gold dot to see what is scheduled that day.</li>
       <li>At the end of your period, click <strong>&#x2713; Close Out Week</strong>. Carry forward, drop, or delegate each incomplete task. History saves automatically.</li>
@@ -452,8 +452,10 @@ function buildAppt(a){
   di.oninput=function(){a.date=di.value;save();renderCal();};
   var tm=el('input'); tm.type='time'; tm.className='appt-time'; tm.value=a.time||'';
   tm.oninput=function(){a.time=tm.value;save();renderCal();};
-  var ti=el('input'); ti.className='appt-text'; ti.value=a.text||''; ti.placeholder='Appointment details...';
-  ti.oninput=function(){a.text=ti.value;save();renderCal();};
+  var ti=el('textarea'); ti.className='appt-text'; ti.value=a.text||''; ti.placeholder='Appointment details...'; ti.rows=1;
+  function resizeTi(){ti.style.height='auto';ti.style.height=ti.scrollHeight+'px';}
+  ti.oninput=function(){a.text=ti.value;save();renderCal();resizeTi();};
+  setTimeout(resizeTi,0);
   var d=el('button'); d.className='a-del'; d.textContent='\u2715';
   d.onclick=function(){ST.appts=ST.appts.filter(function(x){return x.id!==a.id;});save();renderAppts();};
   row.appendChild(di); row.appendChild(tm); row.appendChild(ti); row.appendChild(d);
@@ -533,7 +535,7 @@ function renderRadar(){
   out+='<polygon points="'+dp+'" fill="rgba(255,199,0,0.22)" stroke="#ffc700" stroke-width="2"/>';
   (ST.sections||[]).forEach(function(sec,i){
     var a=angs[i]; var lx=cx+(r+22)*Math.cos(a); var ly=cy+(r+22)*Math.sin(a);
-    var words=(sec.name||'Section').split(' '); var nm=words[0]; if(nm.length>11)nm=nm.slice(0,10)+String.fromCharCode(8230);
+    var words=(sec.name||'Section').split(' '); var nm=words[0]; if(words.length>1&&(words[0]+' '+words[1]).length<=11)nm=words[0]+' '+words[1]; if(nm.length>11)nm=nm.slice(0,10)+String.fromCharCode(8230);
     out+='<text x="'+lx+'" y="'+ly+'" text-anchor="middle" dominant-baseline="middle" fill="#ccc" font-size="9.5" font-family="DM Sans,sans-serif" font-weight="500">'+nm+'</text>';
   });
   svg.innerHTML=out;
