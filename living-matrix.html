@@ -33,16 +33,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .theme-in:focus{border-bottom-color:var(--gold)}
 .theme-in::placeholder{color:#3a3a3a}
 
-.dump-section{background:var(--gold-dim2);border-bottom:1px solid var(--border);padding:18px 28px}
-.dump-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .gold-bar{width:3px;height:18px;background:var(--gold);border-radius:2px;flex-shrink:0}
-.dump-hdr h2{font-family:"Playfair Display",serif;font-size:.98rem;color:var(--text)}
-.dump-hdr span{font-size:.86rem;color:#bbb;margin-left:4px}
-.dump-row{display:flex;gap:10px;align-items:flex-start}
-.dump-ta{flex:1;background:#252525;border:1px solid var(--border);color:var(--text);font-family:"DM Sans",sans-serif;font-size:.87rem;padding:11px 13px;border-radius:8px;resize:vertical;min-height:68px;outline:none;line-height:1.5}
-.dump-ta:focus{border-color:var(--gold)}
-.dump-ta::placeholder{color:#333}
-.dump-btns{display:flex;flex-direction:column;gap:8px}
 .mic-btn{background:#252525;border:1px solid var(--border);color:#ccc;border-radius:8px;padding:9px 15px;cursor:pointer;font-size:.9rem;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:7px;transition:all .2s;white-space:nowrap;font-weight:500}
 .mic-btn:hover{border-color:var(--gold);color:var(--gold)}
 .mic-btn.on{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.08)}
@@ -173,7 +164,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
   header{background:#fff!important;padding:8px 0 6px;border-bottom:1px solid #ddd}
   .logo-label{color:#b8860b!important;font-size:1rem}
   #logo-img{height:28px}
-  .hbtn,.sort-btn,.mic-btn,.s-mic,.t-del,.a-del,.add-btn,.dump-section,.guide,.modal-bg,.toast,.appt-panel,.cal-panel,.radar-panel,.ot-done-btn,.ot-block{display:none!important}
+  .hbtn,.sort-btn,.mic-btn,.s-mic,.t-del,.a-del,.add-btn,.guide,.modal-bg,.toast,.appt-panel,.cal-panel,.radar-panel,.ot-done-btn,.ot-block{display:none!important}
   body{background:#fff!important;color:#111!important;font-size:10px}
   .main{padding:6px 0 0}
   .top-row{display:block!important}
@@ -215,15 +206,6 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 <span class="theme-label">Theme for This Week</span>
 <input class="theme-in" id="theme" placeholder="Enter your weekly theme or intention...">
 </div>
-<div class="dump-section">
-<div class="dump-hdr"><div class="gold-bar"></div><h2>Brain Dump</h2>
-<span>&#8212; speak or type everything on your mind</span></div>
-<div class="dump-row">
-  <textarea class="dump-ta" id="dump" placeholder="e.g. &quot;Call the dentist, finish retention emails, Tuesday meeting at 2pm, take Juniper on a date...&quot;"></textarea>
-  <div class="dump-btns">
-    <button class="mic-btn" id="mic-dump" onclick="toggleDumpMic()">&#127908;&nbsp; Dictate</button>
-  </div>
-</div></div>
 <div class="main">
 <div class="top-row">
   <div class="ot-banner" id="ot-panel">
@@ -300,7 +282,7 @@ function nA(txt,date){return {id:'a'+Date.now()+Math.random().toString(36).slice
 
 function save(){
   ST.pStart=gv('p-start'); ST.pEnd=gv('p-end'); ST.theme=gv('theme');
-  ST.dump=gv('dump'); if(!ST.otBlock)ST.otBlock={d:'',t:''};
+  if(!ST.otBlock)ST.otBlock={d:'',t:''};
   localStorage.setItem(SK, JSON.stringify(ST));
 }
 function gv(id){var el=document.getElementById(id);return el?el.value:'';}
@@ -320,7 +302,7 @@ function load(){
   }catch(e){} }
   else if(cur){ try{ Object.assign(ST, JSON.parse(cur)); }catch(e){} }
   sv('p-start',ST.pStart); sv('p-end',ST.pEnd); sv('theme',ST.theme);
-  sv('dump',ST.dump); if(!ST.otBlock)ST.otBlock={d:'',t:''};
+  if(!ST.otBlock)ST.otBlock={d:'',t:''};
 }
 
 function render(){renderGrid();renderAppts();renderCal();renderOT();renderRadar();}
@@ -587,7 +569,7 @@ function commitCO(){
   var carry=[];
   (ST.sections||[]).forEach(function(sec){(sec.tasks||[]).forEach(function(t){if(!t.done&&coChoices[t.id]==='carry')carry.push({t:Object.assign({},t,{done:false,starred:false}),sid:sec.id});});sec.tasks=[];});
   carry.forEach(function(x){var s=ST.sections.find(function(s){return s.id===x.sid;});if(s)s.tasks.push(x.t);});
-  ST.appts=[];ST.oneThing=null;ST.dump='';ST.otDone=false;ST.otBlock={d:'',t:''};ST.pStart='';ST.pEnd='';ST.theme='';
+  ST.appts=[];ST.oneThing=null;ST.otDone=false;ST.otBlock={d:'',t:''};ST.pStart='';ST.pEnd='';ST.theme='';
   ['p-start','p-end','theme','dump'].forEach(function(id){sv(id,'');});
   closeM('co-modal');save();render();
   toast('New period started. '+carry.length+' task(s) carried forward.',true);
@@ -631,25 +613,6 @@ function toggleApptMic(btn){
   apptRec.start();toast('Say your appointment.',true);
 }
 
-var dumpRec=null;
-function toggleDumpMic(){
-  var btn=document.getElementById('mic-dump');
-  if(!window.SpeechRecognition&&!window.webkitSpeechRecognition){toast('Requires Chrome.',false);return;}
-  if(dumpRec){dumpRec.stop();return;}
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  dumpRec=new SR();dumpRec.continuous=true;dumpRec.interimResults=true;dumpRec.lang='en-US';
-  var ta=document.getElementById('dump'); var base=ta.value;
-  btn.classList.add('on');btn.innerHTML='&#9209;&nbsp; Stop';
-  dumpRec.onresult=function(e){
-    var fin='',int='';
-    for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript;else int+=e.results[i][0].transcript;}
-    if(fin)base+=(base?' ':'')+fin;
-    ta.value=base+(int?' '+int:''); ST.dump=ta.value;
-  };
-  dumpRec.onend=function(){btn.classList.remove('on');btn.innerHTML='&#127908;&nbsp; Dictate';dumpRec=null;save();};
-  dumpRec.onerror=function(e){toast('Mic: '+e.error,false);if(dumpRec)dumpRec.stop();};
-  dumpRec.start();toast('Listening freely...',true);
-}
 
 
 ['p-start','p-end'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',save);});
