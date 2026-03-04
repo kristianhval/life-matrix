@@ -217,13 +217,11 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 </div>
 <div class="dump-section">
 <div class="dump-hdr"><div class="gold-bar"></div><h2>Brain Dump</h2>
-<span>&#8212; speak or type everything on your mind, then let AI sort it</span></div>
+<span>&#8212; speak or type everything on your mind</span></div>
 <div class="dump-row">
   <textarea class="dump-ta" id="dump" placeholder="e.g. &quot;Call the dentist, finish retention emails, Tuesday meeting at 2pm, take Juniper on a date...&quot;"></textarea>
   <div class="dump-btns">
     <button class="mic-btn" id="mic-dump" onclick="toggleDumpMic()">&#127908;&nbsp; Dictate</button>
-    <button class="sort-btn" id="sort-btn" onclick="aiSort()">&#10022; Sort My Tasks</button>
-    <div class="sort-status" id="sort-st"></div>
   </div>
 </div></div>
 <div class="main">
@@ -250,7 +248,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
   <div class="guide-body" id="guide-body">
     <ol>
       <li>Set your <strong>Period</strong> (any date range: one week, two weeks, a full month) and a <strong>Theme</strong> to anchor your focus for the period.</li>
-      <li>Use <strong>Brain Dump</strong> to speak or type everything at once. Hit <em>Sort My Tasks</em> and AI routes each item into the right section. Meetings and appointments go directly to Appointments.</li>
+      <li>Use <strong>Brain Dump</strong> to speak or type everything at once, then manually drag items into the right section.</li>
       <li>Name each section with an area of your life. Use <strong>&#x2665; Save Template</strong> to lock in your section names and <strong>&#x21BA; Load Template</strong> to restore them next period.</li>
       <li>Drag and drop tasks between sections if anything lands in the wrong place.</li>
       <li>Star <strong>&#9733;</strong> the most important item in each section. Pick your single <strong>ONE Thing</strong> across all sections and block time for it first.</li>
@@ -653,34 +651,6 @@ function toggleDumpMic(){
   dumpRec.start();toast('Listening freely...',true);
 }
 
-async function aiSort(){
-  var dump=document.getElementById('dump').value.trim();
-  if(!dump){toast('Add something to Brain Dump first.',false);return;}
-  var btn=document.getElementById('sort-btn'); var st=document.getElementById('sort-st');
-  btn.disabled=true;btn.textContent='Sorting...';st.textContent='Asking Claude...';
-  var names=(ST.sections||[]).map(function(s){return s.name||'Unnamed';}).join(', ');
-  var prompt='Organize tasks for a life planner.\n\nSections: '+names+'\nAlso always: "Appointments"\n\nRULE: meetings/calls/scheduled events -> Appointments. Everything else -> best matching section.\n\nBrain dump: "'+dump+'"\n\nExtract every task. Respond ONLY with valid JSON (no markdown, no code fences):\n{"sections":{"Section Name":["task 1"],"Appointments":["meeting name"]}}';
-  try{
-    var res=await fetch('/.netlify/functions/sort',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok)throw new Error((await res.json()).error?.message||res.statusText);
-    var data=await res.json();
-    var txt=data.content[0].text.trim().replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
-    var parsed=JSON.parse(txt); var added=0;
-    for(var key in parsed.sections){
-      var tasks=parsed.sections[key];
-      if(key.toLowerCase().indexOf('appoint')>=0){
-        tasks.forEach(function(t){if(t&&t.trim()){ST.appts.push(nA(t.trim()));added++;}});
-      }else{
-        var sec=ST.sections.find(function(s){return s.name.toLowerCase().indexOf(key.toLowerCase())>=0||key.toLowerCase().indexOf(s.name.toLowerCase())>=0;})||ST.sections[ST.sections.length-1];
-        tasks.forEach(function(t){if(t&&t.trim()){sec.tasks.push(nT(t.trim()));added++;}});
-      }
-    }
-    document.getElementById('dump').value='';ST.dump='';save();render();st.textContent='';
-    toast(added+' tasks sorted.',true);
-  }catch(e){st.textContent='Error: '+e.message;toast('Sort failed.',false);console.error(e);}
-  finally{btn.disabled=false;btn.textContent='\u2736 Sort My Tasks';}
-}
 
 ['p-start','p-end'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',save);});
 ['theme','dump','ot-bd','ot-bt'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',save);});
