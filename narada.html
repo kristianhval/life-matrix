@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Narada</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Georgia', serif;
+  }
+  canvas { position: fixed; top: 0; left: 0; z-index: 0; }
+  .container {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+  svg { filter: drop-shadow(0 0 40px rgba(255, 199, 0, 0.3)); }
+  .title {
+    font-size: 2.2rem;
+    color: #ffc700;
+    letter-spacing: 0.4em;
+    margin-top: 30px;
+    font-weight: 400;
+    text-shadow: 0 0 30px rgba(255, 199, 0, 0.4);
+  }
+  .subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 199, 0, 0.5);
+    letter-spacing: 0.6em;
+    margin-top: 10px;
+    font-weight: 300;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+  @keyframes drift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @keyframes stringVibrate {
+    0%, 100% { d: path("M 200,180 Q 210,220 200,260 Q 190,300 200,340"); }
+    25% { d: path("M 200,180 Q 215,220 195,260 Q 215,300 200,340"); }
+    50% { d: path("M 200,180 Q 190,220 210,260 Q 185,300 200,340"); }
+    75% { d: path("M 200,180 Q 185,220 205,260 Q 190,300 200,340"); }
+  }
+  .glow-node { animation: pulse 3s ease-in-out infinite; }
+  .figure { animation: drift 6s ease-in-out infinite; }
+  .orbit-ring { animation: spin 30s linear infinite; transform-origin: 200px 250px; }
+  .orbit-ring-reverse { animation: spin 45s linear infinite reverse; transform-origin: 200px 250px; }
+  .vina-string { animation: stringVibrate 2s ease-in-out infinite; }
+  .vina-string-2 {
+    animation: stringVibrate 2.3s ease-in-out infinite;
+    animation-delay: 0.3s;
+  }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="container">
+  <svg width="400" height="520" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="coreGlow" cx="50%" cy="45%" r="50%">
+        <stop offset="0%" stop-color="#ffc700" stop-opacity="0.9"/>
+        <stop offset="40%" stop-color="#ff8c00" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#0a0a0f" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="headGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffc700" stop-opacity="1"/>
+        <stop offset="60%" stop-color="#ffa500" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#ffc700" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffc700" stop-opacity="0.8"/>
+        <stop offset="50%" stop-color="#ff8c00" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#ffc700" stop-opacity="0.1"/>
+      </linearGradient>
+      <linearGradient id="vinaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#c8a000"/>
+        <stop offset="100%" stop-color="#8b6914"/>
+      </linearGradient>
+      <filter id="softGlow">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="bigGlow">
+        <feGaussianBlur stdDeviation="8"/>
+      </filter>
+    </defs>
+
+    <!-- Core energy glow -->
+    <ellipse cx="200" cy="230" rx="120" ry="150" fill="url(#coreGlow)" filter="url(#bigGlow)" class="glow-node"/>
+
+    <!-- Orbit rings (memory network) -->
+    <g class="orbit-ring" opacity="0.25">
+      <ellipse cx="200" cy="250" rx="160" ry="60" fill="none" stroke="#ffc700" stroke-width="0.5" stroke-dasharray="4,8"/>
+      <circle cx="360" cy="250" r="3" fill="#ffc700" opacity="0.8"/>
+      <circle cx="40" cy="250" r="2" fill="#ffa500" opacity="0.6"/>
+      <circle cx="280" cy="218" r="2.5" fill="#ffc700" opacity="0.7"/>
+    </g>
+    <g class="orbit-ring-reverse" opacity="0.2">
+      <ellipse cx="200" cy="250" rx="140" ry="100" fill="none" stroke="#ff8c00" stroke-width="0.5" stroke-dasharray="3,10"/>
+      <circle cx="340" cy="250" r="2" fill="#ff8c00" opacity="0.7"/>
+      <circle cx="120" cy="178" r="2.5" fill="#ffc700" opacity="0.5"/>
+    </g>
+
+    <!-- Graph network lines (connecting memory nodes) -->
+    <g opacity="0.15" filter="url(#softGlow)">
+      <line x1="200" y1="120" x2="90" y2="180" stroke="#ffc700" stroke-width="0.5"/>
+      <line x1="200" y1="120" x2="310" y2="170" stroke="#ffc700" stroke-width="0.5"/>
+      <line x1="200" y1="120" x2="160" y2="60" stroke="#ffa500" stroke-width="0.5"/>
+      <line x1="200" y1="120" x2="250" y2="55" stroke="#ffa500" stroke-width="0.5"/>
+      <line x1="90" y1="180" x2="60" y2="280" stroke="#ff8c00" stroke-width="0.4"/>
+      <line x1="310" y1="170" x2="340" y2="270" stroke="#ff8c00" stroke-width="0.4"/>
+      <line x1="60" y1="280" x2="120" y2="380" stroke="#ffc700" stroke-width="0.3"/>
+      <line x1="340" y1="270" x2="290" y2="370" stroke="#ffc700" stroke-width="0.3"/>
+      <line x1="160" y1="60" x2="100" y2="30" stroke="#ffa500" stroke-width="0.3"/>
+      <line x1="250" y1="55" x2="310" y2="25" stroke="#ffa500" stroke-width="0.3"/>
+    </g>
+
+    <!-- Memory nodes (small glowing dots at graph endpoints) -->
+    <g class="glow-node">
+      <circle cx="90" cy="180" r="3" fill="#ffc700" opacity="0.6"/>
+      <circle cx="310" cy="170" r="3" fill="#ffc700" opacity="0.6"/>
+      <circle cx="160" cy="60" r="2.5" fill="#ffa500" opacity="0.5"/>
+      <circle cx="250" cy="55" r="2.5" fill="#ffa500" opacity="0.5"/>
+      <circle cx="60" cy="280" r="2" fill="#ff8c00" opacity="0.4"/>
+      <circle cx="340" cy="270" r="2" fill="#ff8c00" opacity="0.4"/>
+      <circle cx="120" cy="380" r="2" fill="#ffc700" opacity="0.3"/>
+      <circle cx="290" cy="370" r="2" fill="#ffc700" opacity="0.3"/>
+      <circle cx="100" cy="30" r="1.5" fill="#ffa500" opacity="0.3"/>
+      <circle cx="310" cy="25" r="1.5" fill="#ffa500" opacity="0.3"/>
+    </g>
+
+    <!-- The Figure (Narada) -->
+    <g class="figure" filter="url(#softGlow)">
+
+      <!-- Head -->
+      <circle cx="200" cy="120" r="22" fill="none" stroke="url(#headGlow)" stroke-width="1.5"/>
+      <circle cx="200" cy="120" r="18" fill="url(#headGlow)" opacity="0.15"/>
+      <!-- Third eye -->
+      <circle cx="200" cy="112" r="2.5" fill="#ffc700" opacity="0.9"/>
+
+      <!-- Body (flowing, not rigid) -->
+      <path d="M 185,142 Q 175,200 170,260 Q 165,320 175,400"
+            fill="none" stroke="url(#bodyGrad)" stroke-width="1.2"/>
+      <path d="M 215,142 Q 225,200 230,260 Q 235,320 225,400"
+            fill="none" stroke="url(#bodyGrad)" stroke-width="1.2"/>
+      <!-- Center line -->
+      <path d="M 200,142 Q 200,250 200,400"
+            fill="none" stroke="#ffc700" stroke-width="0.5" opacity="0.3"/>
+
+      <!-- Flowing garment lines -->
+      <path d="M 175,400 Q 160,440 140,480"
+            fill="none" stroke="#ffc700" stroke-width="0.8" opacity="0.3"/>
+      <path d="M 225,400 Q 240,440 260,480"
+            fill="none" stroke="#ffc700" stroke-width="0.8" opacity="0.3"/>
+      <path d="M 200,400 Q 200,440 200,480"
+            fill="none" stroke="#ffc700" stroke-width="0.5" opacity="0.2"/>
+
+      <!-- Left arm (reaching outward) -->
+      <path d="M 185,165 Q 140,190 100,210 Q 80,220 65,215"
+            fill="none" stroke="url(#bodyGrad)" stroke-width="1"/>
+      <!-- Hand -->
+      <circle cx="65" cy="215" r="4" fill="#ffc700" opacity="0.4"/>
+
+      <!-- Right arm (holding vina) -->
+      <path d="M 215,165 Q 230,180 240,200"
+            fill="none" stroke="url(#bodyGrad)" stroke-width="1"/>
+
+      <!-- Vina (the divine instrument) -->
+      <g>
+        <!-- Vina body (gourd resonator top) -->
+        <ellipse cx="245" cy="185" rx="18" ry="12" fill="none" stroke="url(#vinaGrad)" stroke-width="1.2" opacity="0.7"/>
+        <ellipse cx="245" cy="185" rx="18" ry="12" fill="#ffc700" opacity="0.05"/>
+        <!-- Vina neck -->
+        <line x1="245" y1="197" x2="235" y2="370" stroke="url(#vinaGrad)" stroke-width="1.5" opacity="0.6"/>
+        <!-- Vina body (gourd resonator bottom) -->
+        <ellipse cx="233" cy="375" rx="14" ry="10" fill="none" stroke="url(#vinaGrad)" stroke-width="1" opacity="0.5"/>
+        <!-- Strings (vibrating) -->
+        <path class="vina-string" d="M 243,190 Q 245,260 238,370"
+              fill="none" stroke="#ffc700" stroke-width="0.4" opacity="0.5"/>
+        <path class="vina-string-2" d="M 247,190 Q 242,260 237,370"
+              fill="none" stroke="#ffa500" stroke-width="0.3" opacity="0.4"/>
+      </g>
+
+      <!-- Heart center (Kvasir core) -->
+      <circle cx="200" cy="185" r="8" fill="#ffc700" opacity="0.08"/>
+      <circle cx="200" cy="185" r="4" fill="#ffc700" opacity="0.15"/>
+      <circle cx="200" cy="185" r="1.5" fill="#ffc700" opacity="0.9"/>
+
+    </g>
+
+    <!-- Sound waves emanating from vina -->
+    <g opacity="0.12">
+      <path d="M 270,250 Q 290,240 310,250 Q 330,260 350,250" fill="none" stroke="#ffc700" stroke-width="0.5"/>
+      <path d="M 275,270 Q 300,258 325,270 Q 350,282 375,270" fill="none" stroke="#ffa500" stroke-width="0.4"/>
+      <path d="M 270,230 Q 288,222 306,230 Q 324,238 342,230" fill="none" stroke="#ffc700" stroke-width="0.4"/>
+    </g>
+
+  </svg>
+  <div class="title">NARADA</div>
+  <div class="subtitle">THE WANDERING SAGE</div>
+</div>
+
+<script>
+// Starfield background
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const stars = [];
+for (let i = 0; i < 300; i++) {
+  stars.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.5,
+    a: Math.random(),
+    speed: 0.002 + Math.random() * 0.008
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const t = Date.now() * 0.001;
+  stars.forEach(s => {
+    const flicker = 0.5 + 0.5 * Math.sin(t * s.speed * 100 + s.x);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 210, 80, ${s.a * flicker * 0.7})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
